@@ -13,6 +13,28 @@ def hwValBash():
     print("Hardware validation output:", output)
     return output
 
+
+def createEthAccount(account_name, curve="secp256k1", exportable=True):
+    vault_addr = os.environ.get("VAULT_ADDR", "http://127.0.0.1:8200")
+    vault_token = os.environ.get("VAULT_TOKEN", "")
+    
+    url = f"{vault_addr}/v1/ethereum/accounts"
+    headers = {
+        "Authorization": "Bearer ${vault_token}",
+        "Content-Type": "application/json"
+    }
+    data = {
+    }
+    
+    resp = requests.post(url, headers=headers, json=data)
+    if resp.status_code == 200:
+        print(f"Account '{account_name}' created successfully!")
+        print("Response:", resp.json())
+        return resp.json()
+    else:
+        print(f"Error creating account '{account_name}': {resp.status_code} {resp.text}")
+        return None
+
 def publishDataToIpfs(data):
     """Push the hardware validation output (or other data) to IPFS via Pinata."""
     pinata_api_key = os.environ.get("PINATA_API_KEY")
@@ -44,26 +66,15 @@ def main():
     print("vault address", vault_addr)
     print("vault token", vault_token)
 
-    client = hvac.Client(url=vault_addr, token=vault_token)
-
-    account_name = "ephemeral-account-123"
-    create_resp = client.write(
-        f"ethsign/accounts/{account_name}",
-    )
-    print("Create Account Response:", create_resp)
-
-    account_resp = client.read(f"ethsign/accounts/{account_name}")
-    print("Account Info:", account_resp)
+    accountName = "ephemeralabc"
+    account = createEthAccount(accountName)
 
     hwValOutput = hwValBash()
     proofOfTask = publishDataToIpfs({"hw_validation": hwValOutput})
 
     sign_payload = f"ipfs://{proofOfTask}".encode("utf-8")
 
-    sign_resp = client.write(
-        f"ethsign/accounts/{account_name}/sign",
-        payload=sign_payload.hex()  
-    )
+    sign_resp = "TODO"
     print("Sign Response:", sign_resp)
 
     signature = sign_resp["data"]["signature"]
