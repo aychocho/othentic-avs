@@ -17,9 +17,45 @@ This repository demonstrates how to implement a simple price oracle AVS using th
 
 ## Overview
 
-The Simple Price Oracle AVS Example demonstrates how to deploy a minimal AVS using Othentic Stack.
+Quok.it's AVS consists of four components, rather than the traditional 3 in an AVS.
+
+1. GPU Provider: Runs a python script that performs hardware validation & sends its results to the AVS Performer node
+2. Performer node: Packages this hardware validation output into a format suitable for Attester nodes
+3. Attester node: Parses our hardware validation script's output and decides to accept or reject the GPU
+4. Aggregator node: Submits consensus decision on-chain
+
+Quok.it's AVS is built using the Othentic stack framework, which has vastly simplified the AVS deployment process. Shout out to Raz, Yash, and Dean for all their support in getting this to work!
+
+![image.png](attachment:b075e064-24e3-4b75-898d-97032843e2fc:image.png)
 
 
+### Explanation
+
+env vars: RPC url, hashicorp vault public key for signature validation 
+
+The flow of this program is as follows:
+
+1. Provider starts the hw validation script
+   a. Requests an ephemeral keypair from Hashicorp Vault
+2. Vault returns an ephemeral keypair and a signature
+3. Provider validates this signature & wraps up the hardware validation script
+4. RPC call signed with said ephemeral keys
+5. Attesters validate:
+    a.  signature from vault on ephemeral key
+    b. Ephemeral key signature
+    c. Output of hwval
+6. Attesters make a judgement on whether to let GPU in or not
+    a. Red flags: IMMEDIATE REJECTION
+        1. signature mismatch
+        2. nvidia-smi & pciid don't match
+        3. VBIOS shenanigans
+        4. Secure boot enabled & kernel image signature failed
+    b. Yellow flags: Log this, not grounds for rejection
+        1. Secure boot disabled
+        2. Virtualization detected
+        3. Kernel modules tainted (Dassie)
+8. Attesters come to consensus & submit to aggregators
+9. Aggregators push consensus on-chain!
 
 ### Features
 
